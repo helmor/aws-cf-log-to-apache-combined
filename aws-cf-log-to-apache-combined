@@ -1,0 +1,68 @@
+#!/usr/bin/env php
+<?php
+
+set_time_limit(0);
+
+function usage() {
+  echo "usage: " . basename(__FILE__) . " filename\n";
+  die();
+}
+
+if (!isset($argv[1])) {
+  usage();
+}
+
+$file = $argv[1];
+
+if (isset($argv[2])) {
+  $out = $argv[2];
+} else {
+  $out = "";
+}
+
+$fp = fopen($file, "r");
+if ($out != "") {
+  $fp_out = fopen($out, "w");
+}
+
+while(!feof($fp)) {
+  $line = fgets($fp);
+  $output = "";
+  $chunks = explode("\t", trim($line));
+  if ((substr($line, 0, 1) != "#") && (count($chunks) > 2)){
+    $a_output = array();
+    $a_output[] = $chunks[4];
+    $a_output[] = "-";
+    $a_output[] = "-";
+
+    list($year, $month, $day) = explode("-", $chunks[0]);
+    list($hour, $minute, $second) = explode(":", $chunks[1]);
+    $time = mktime($hour, $minute, $second, $month, $day, $year);
+    $a_output[] = date("[d/M/Y:H:i:s]", $time);
+
+    $a_output[] = "\"" . $chunks[5] . " " . $chunks[7] . " HTTP/1.1\"";
+    if ($chunks[8] == 0) {
+      $a_output[] = 500;
+    } else {
+      $a_output[] = $chunks[8];
+    }
+    $a_output[] = $chunks[3];
+    $a_output[] = "\"" . $chunks[9] . "\"";
+    $a_output[] = "\"" . urldecode(urldecode($chunks[10])) . "\"";
+
+    $output = implode(" ", $a_output);
+  }
+  if ($output != "") {
+      $output .= "\n";
+      if ($out != "") {
+        fwrite($fp_out, $output);
+      } else {
+        echo $output;
+      }
+  }
+}
+
+fclose($fp);
+if ($out != "") {
+  fclose($fp_out);
+}
